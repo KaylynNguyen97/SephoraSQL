@@ -1,0 +1,208 @@
+---
+title: "Sephora_Visualizations"
+author: "Kaylyn Nguyen"
+date: "2024-11-27"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE, warning=FALSE}
+library(ggplot2)
+library(dplyr)
+library(readr)
+library(treemap)
+library(ggrepel)
+```
+
+# Business Question 1
+### What is the average rating and total number of reviews for each product?
+```{r}
+Business_Question_1 <- read_csv("Business Question 1.csv")
+
+# Select top 15 products 
+# You can adjust the ranking method by changing the arrange() parameters
+top_15_products <- Business_Question_1 %>%
+  # Weighted scoring - you can adjust the weights
+  mutate(score = (avg_rating * 0.6) + (total_reviews / max(total_reviews) * 0.4) * 5) %>%
+  arrange(desc(score)) %>%
+  slice_head(n = 15)
+
+# Scatter plot with top 15 products
+Business_Question_1_Plot <- ggplot(top_15_products, aes(x = total_reviews, y = avg_rating)) +
+  geom_point(color = "blue", size = 3) +
+  geom_text_repel(aes(label = product_name), 
+                  size = 3,
+                  max.overlaps = Inf,
+                  box.padding = 0.5,
+                  point.padding = 0.5) +
+  labs(
+    title = "Product Reviews vs Ratings (Top 15)",
+    x = "Number of Reviews", 
+    y = "Rating"
+  ) +
+  theme_minimal()
+
+Business_Question_1_Plot
+```
+
+# Business Question 2
+### Which brands have the highest number of products priced above $50?
+```{r figure_name, fig.width=10, fig.height=8, out.width='100%', dpi=300}
+Business_Question_2 <- read_csv("Business Question 2.csv") %>%
+  slice_max(order_by = luxury_products, n = 15)
+
+Business_Question_2_Plot <- ggplot(Business_Question_2, aes(x = reorder(brand, luxury_products), y = luxury_products)) +
+  geom_col(fill = "darkorange") +
+  coord_flip() +
+  labs(
+    title = "Number of Luxury Products per Brand (Top 15)",
+    x = "Brand",
+    y = "Number of Products"
+  ) +
+  theme_minimal()
+
+Business_Question_2_Plot
+```
+
+# Business Question 3
+### List all limited edition products with their prices and ratings
+```{r figure_name, fig.width=10, fig.height=8, out.width='100%', dpi=300}
+Business_Question_3 <- read_csv("Business Question 3.csv") %>%
+  slice_max(order_by = price, n = 15)
+
+# Business Question 3 Plot with non-overlapping labels
+Business_Question_3_Plot <- ggplot(Business_Question_3, aes(x = price, y = rating)) +
+  geom_point(color = "purple", size = 3) +
+  geom_text_repel(aes(label = product_name), 
+                  size = 3,
+                  max.overlaps = Inf,  # Show all labels
+                  box.padding = 0.5,   # Padding around points
+                  point.padding = 0.5) + # Padding to avoid overlapping
+  labs(
+    title = "Limited Edition Products: Price vs Rating (Top 15)",
+    x = "Price",
+    y = "Rating"
+  ) +
+  theme_minimal()
+
+Business_Question_3_Plot
+```
+
+# Business Question 4
+### What is the total number of online only products in each category?
+```{r figure_name, fig.width=10, fig.height=8, out.width='100%', dpi=300}
+Business_Question_4 <- read_csv("Business Question 4.csv") %>%
+  slice_max(order_by = online_only_count, n = 15)
+
+Business_Question_4_Plot <- ggplot(Business_Question_4, aes(x = reorder(category, online_only_count), y = online_only_count)) +
+  geom_col(fill = "skyblue") +
+  coord_flip() +
+  labs(
+    title = "Online-Only Products per Category (Top 15)",
+    x = "Category",
+    y = "Number of Online-Only Products"
+  ) +
+  theme_minimal()
+
+Business_Question_4_Plot
+```
+
+# Business Question 5
+### Identify brand performance tiers based on average product rating, review count, and price point
+
+```{r figure_name, fig.width=10, fig.height=8, out.width='100%', dpi=300}
+Business_Question_5 <- read_csv("Business Question 5.csv")
+
+Business_Question_5_Plot <- ggplot(Business_Question_5, aes(x = reorder(brand_tier, -avg_rating), fill = brand_tier)) +
+  geom_bar() +
+  labs(
+    title = "Number of Brands by Performance Tier (Top 15)",
+    x = "Performance Tier",
+    y = "Count of Brands"
+  ) +
+  theme_minimal()
+
+Business_Question_5_Plot
+```
+
+# Business Question 6
+### Find products that outperform their brand's average in both ratings and price efficiency (rating-to-price ratio)
+
+```{r figure_name, fig.width=10, fig.height=8, out.width='100%', dpi=300}
+Business_Question_6 <- read_csv("Business Question 6.csv")
+
+# Filter top-performing products
+top_performers <- Business_Question_6 %>%
+  filter(rating > brand_avg_rating, rating_per_dollar > brand_avg_rating_per_dollar) %>%
+  mutate(performance_score = (rating - brand_avg_rating) + 
+           (rating_per_dollar - brand_avg_rating_per_dollar)) %>%
+  arrange(desc(performance_score)) %>%
+  slice(1:10)
+
+# Plotting with brand label
+Business_Question_6_Plot <- ggplot(top_performers, aes(x = reorder(product_name, performance_score), y = performance_score)) +
+  geom_col(aes(fill = category)) +
+  geom_text(aes(label = brand), hjust = -0.1, size = 3) +  # Add brand label next to the bars
+  coord_flip() +
+  labs(
+    title = "Top 15 Products Outperforming Brand Averages",
+    subtitle = "Each product exceeds both rating and price efficiency metrics of their brand",
+    x = "Product Name",
+    y = "Performance Score (Combined Rating & Efficiency)",
+    fill = "Category"
+  ) +
+  theme_minimal() +
+  theme(plot.subtitle = element_text(size = 10))
+
+Business_Question_6_Plot
+```
+
+
+# Business Question 7
+### Which products contribute the most to their brand's total revenue in each category?
+
+```{r figure_name, fig.width=10, fig.height=8, out.width='100%', dpi=300}
+Business_Question_7 <- read_csv("Business Question 7.csv") %>%
+  slice_max(order_by = product_revenue, n = 20)
+
+# Create the stacked bar chart based on contribution percentage
+Business_Question_7_Plot <- ggplot(Business_Question_7, aes(x = reorder(brand, -contribution_percentage), y = contribution_percentage, fill = product_name)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Contribution Percentage to Revenue by Products (Stacked Bar Chart)",
+    x = "Brand",
+    y = "Contribution Percentage (%)",
+    fill = "Product"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+Business_Question_7_Plot
+```
+
+
+# Business Question 8
+### Which brands have the highest number of high-rated products (above 4.5) in at least 3 different categories?
+
+```{r figure_name, fig.width=10, fig.height=8, out.width='100%', dpi=300}
+Business_Question_8 <- read_csv("Business Question 8.csv") %>%
+  slice_max(order_by = categories_with_high_rated, n = 15)
+
+Business_Question_8_Plot <- ggplot(Business_Question_8, aes(x = reorder(brand, categories_with_high_rated), y = categories_with_high_rated)) +
+  geom_col(fill = "darkgreen") +
+  coord_flip() +
+  labs(
+    title = "Brands with High-Rated Products in Multiple Categories (Top 15)",
+    x = "Brand",
+    y = "Number of Categories"
+  ) +
+  theme_minimal()
+
+Business_Question_8_Plot
+```
+
