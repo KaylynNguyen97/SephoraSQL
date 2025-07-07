@@ -1,4 +1,4 @@
-# Sephora Website Product Database
+# Sephora SQL Project
 
 This repository contains the database schema, population scripts, and analysis for a comprehensive dataset of products available on the Sephora website. The project aims to organize product data efficiently to support complex queries related to product characteristics, brand performance, customer feedback, and pricing strategies.
 
